@@ -1,26 +1,4 @@
-"""
-Road Safety Analytics — DuckDB query backend (CS661)
-====================================================
-Serves aggregate queries over the prepared Parquet stores:
 
-  data/runtime/uk/     UK STATS19 1979-2024, produced by
-                       scripts/data_pipeline/uk/build_runtime_dataset.py
-  data/runtime/india/  India synthetic corpus, produced by
-                       scripts/data_pipeline/india/build_runtime_dataset.py
-
-Design notes
-------------
-* Read-only DuckDB over Parquet; every table is registered as a VIEW.
-* /api/agg returns rows shaped exactly like the frontend's groupSeverity()
-  helper ({key, total, <severity counts>, fatalRate, ...}), so components
-  swap their client-side aggregation for a fetch with minimal change.
-* All identifiers are validated against a per-table column allowlist derived
-  from the Parquet schema at startup — user input is never interpolated as
-  SQL identifiers; values go through bound parameters.
-
-Run:
-    uvicorn main:app --reload --port 8000
-"""
 
 import json
 import math
@@ -62,6 +40,7 @@ con.execute("PRAGMA threads=4")
 COLS: dict[str, set] = {}
 
 MODELS: dict[str, dict] = {}
+MODEL_STATUS: dict[str, str] = {}  
 
 def db():
     """A fresh cursor per request. FastAPI runs sync route handlers in a
@@ -94,11 +73,15 @@ def load_models():
     for ds, cfg in DATASETS.items():
         path = cfg["dir"] / "model" / "pipeline.joblib"
         if not path.exists():
+            MODEL_STATUS[ds] = f"missing file: {path}"
+            print(f"[startup] no model file for '{ds}' at {path}")
             continue
         try:
             MODELS[ds] = joblib.load(path)
+            MODEL_STATUS[ds] = "loaded"
             print(f"[startup] loaded severity model for '{ds}'")
         except Exception as e:
+            MODEL_STATUS[ds] = f"error: {type(e).__name__}: {e}"
             print(f"[startup] failed to load model for '{ds}': {e}")
 
 def resolve(dataset: str, table: Optional[str]):
@@ -144,7 +127,8 @@ def build_where(view, filters_json, year_min, year_max, hour_min, hour_max):
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "views": sorted(COLS)}
+    return {"ok": True, "views": sorted(COLS),
+            "models_loaded": sorted(MODELS), "model_status": MODEL_STATUS}
 
 @app.get("/api/meta")
 def meta(dataset: str = Query("uk")):

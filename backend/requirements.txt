@@ -2,6 +2,11 @@ fastapi>=0.115
 uvicorn[standard]>=0.32
 duckdb>=1.1
 pandas>=2.0
-scikit-learn>=1.3
-xgboost>=2.0
-joblib>=1.3
+# Pinned exactly to the versions that pickled data/runtime/*/model/pipeline.joblib.
+# A joblib model saved with one sklearn/xgboost/numpy build fails to unpickle under a
+# different one, which made /api/predict 503 on fresh (e.g. Windows) installs that
+# grabbed newer releases via `>=`. Keep these in sync with train_severity_model.py's env.
+numpy==2.0.2
+scikit-learn==1.6.1
+xgboost==2.1.4
+joblib==1.5.3

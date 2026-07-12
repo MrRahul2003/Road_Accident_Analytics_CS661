@@ -1,0 +1,71 @@
+# Claude
+.claude/
+CLAUDE.md
+
+# Docs / reports (not part of the shipped project)
+README.md
+CS661_Group8_Project_Final_Report.pdf
+
+# Node / frontend
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Datasets and generated data outputs
+data/sources/
+data/intermediate/
+data/raw/
+data/cleaned/
+data/external/
+data/india_synth/
+data/uk/
+data/*.csv
+data/*.json
+UKdata/
+frontend/public/data/
+
+# Local compressed data archives
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+
+# ML model artifacts
+models/
+model/
+*.pkl
+*.joblib
+*.model
+*.h5
+*.keras
+*.pt
+*.pth
+*.onnx
+*.sav
+*.xgb
+*.cbm
+
+# except the small runtime pipelines the app loads at startup
+!data/runtime/*/model/
+!data/runtime/*/model/*.joblib
+
+# Temp data-fetch scratch files
+**/_india*.geojson
+**/_st.geojson

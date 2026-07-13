@@ -46,6 +46,18 @@ export const mergeOtherUnknown = (label) =>
 export const mergeLaneChange = (label) =>
   /^changing lane to the (left|right)$/i.test(label) ? "Lane change" : label;
 
+// Same idea as sortOtherLast, but for rows that still carry their raw label
+// (e.g. "Unknown" and "Other" as distinct categories, not yet folded into one).
+const UNKNOWN_OR_OTHER_RE = /^(unknown|other)/i;
+export function sortUnknownOtherLast(rows, cmp) {
+  return [...rows].sort((a, b) => {
+    const aU = UNKNOWN_OR_OTHER_RE.test(String(a.key).trim());
+    const bU = UNKNOWN_OR_OTHER_RE.test(String(b.key).trim());
+    if (aU !== bU) return aU ? 1 : -1;
+    return cmp(a, b);
+  });
+}
+
 export function sortOtherLast(rows, cmp) {
   return [...rows].sort((a, b) => {
     const aOther = a.key === OTHER_UNKNOWN, bOther = b.key === OTHER_UNKNOWN;

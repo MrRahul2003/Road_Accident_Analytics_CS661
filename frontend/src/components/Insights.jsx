@@ -7,7 +7,7 @@ import {
 import { useStore } from "../data/store.jsx";
 import { useAgg } from "../data/api.js";
 import { SEVERITY_ORDER } from "../theme.js";
-import { fmtPct } from "../data/aggutil.js";
+import { fmtPct, sortUnknownOtherLast } from "../data/aggutil.js";
 import { axisProps, tipProps } from "./Overview.jsx";
 import SeverityFactorBars from "./SeverityFactorBars.jsx";
 
@@ -15,7 +15,7 @@ const AGE_ORDER = ["Under 18", "18-30", "31-50", "Over 51", "Unknown"];
 
 const EXP_ORDER_BY_DATASET = {
   india: ["No Licence", "Below 1yr", "1-2yr", "2-5yr", "5-10yr", "Above 10yr", "Unknown"],
-  uk: ["Unknown", "0-2 yrs", "3-5 yrs", "6-10 yrs", "11-15 yrs", "Over 15 yrs"],
+  uk: ["0-2 yrs", "3-5 yrs", "6-10 yrs", "11-15 yrs", "Over 15 yrs", "Unknown"],
 };
 
 // Distinct from the injury triadic (teal / olive / magenta): the dominant categories get
@@ -69,16 +69,19 @@ export default function Insights() {
   const expTitle = dataset === "india" ? "Driving experience" : "Vehicle age";
 
   const { data: ageAgg } = useAgg("Age_band_of_driver", { ignoreFields: ["Age_band_of_driver"] });
-  const age = useMemo(() =>
-    ordered(ageAgg, AGE_ORDER).map((o) => ({
+  const age = useMemo(() => {
+    const ordAge = ordered(ageAgg, AGE_ORDER);
+    const grand = ordAge.reduce((a, o) => a + (o.total || 0), 0);
+    return ordAge.map((o) => ({
       ...o,
-      _slightDisp: Math.sqrt(o["Slight Injury"] || 0),
-      _seriousDisp: Math.sqrt(o["Serious Injury"] || 0),
-      _fatalDisp: Math.sqrt(o["Fatal injury"] || 0),
-    })),
-    [ageAgg]);
+      pct: grand ? (o.total / grand) * 100 : 0,
+      _slightDisp: grand ? Math.sqrt(((o["Slight Injury"] || 0) / grand) * 100) : 0,
+      _seriousDisp: grand ? Math.sqrt(((o["Serious Injury"] || 0) / grand) * 100) : 0,
+      _fatalDisp: grand ? Math.sqrt(((o["Fatal injury"] || 0) / grand) * 100) : 0,
+    }));
+  }, [ageAgg]);
   const AGE_DISP_KEY = { "Slight Injury": "_slightDisp", "Serious Injury": "_seriousDisp", "Fatal injury": "_fatalDisp" };
-  const sqAge = (v) => Math.round(v * v);
+  const sqAge = (v) => v * v;
 
   const { data: expAgg } = useAgg("Driving_experience");
   const exp = useMemo(() =>
@@ -87,7 +90,6 @@ export default function Insights() {
         key: o.key,
         Fatal: o.fatalRate * 100,
         Serious: o.seriousRate * 100,
-        Slight: o.total ? ((o["Slight Injury"] || 0) / o.total) * 100 : 0,
       })),
     [expAgg, dataset]);
 
@@ -96,8 +98,7 @@ export default function Insights() {
   // conditions visible, and distinct colours avoid the injury triadic.
   const light = useMemo(() => {
     const grand = lightAgg.reduce((a, o) => a + o.total, 0);
-    return [...lightAgg]
-      .sort((a, b) => b.total - a.total)
+    return sortUnknownOtherLast(lightAgg, (a, b) => b.total - a.total)
       .map((o, i) => ({
         ...o,
         name: o.key,
@@ -110,7 +111,7 @@ export default function Insights() {
   const { data: surfaceRaw } = useAgg("Road_surface_conditions", { minCount: 1, ignoreFields: ["Road_surface_conditions"] });
   const surface = useMemo(() => {
     const grand = surfaceRaw.reduce((a, o) => a + o.total, 0);
-    return surfaceRaw.map((o, i) => ({
+    return sortUnknownOtherLast(surfaceRaw, () => 0).map((o, i) => ({
       ...o,
       _disp: Math.sqrt(o.total),
       pct: grand ? (o.total / grand) * 100 : 0,
@@ -149,13 +150,17 @@ export default function Insights() {
           <div className="card-head"><span className="card-title">Driver age band</span></div>
           <div className="fill">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={age} margin={{ left: 0, right: 8 }}>
+              <BarChart data={age} margin={{ left: 0, right: 8, top: 18 }}>
                 <XAxis dataKey="key" {...axisProps} tick={{ fontSize: 10, fill: "#B8C2CD" }} />
-                <YAxis {...axisProps} tickFormatter={sqAge} />
-                <Tooltip {...tipProps} formatter={(v, n) => [sqAge(v).toLocaleString(), n]} />
-                {SEVERITY_ORDER.map((s) => (
+                <YAxis {...axisProps} unit="%" tickFormatter={(v) => fmtPct(sqAge(v))} />
+                <Tooltip {...tipProps} formatter={(v, n) => [`${fmtPct(sqAge(v))}%`, n]} />
+                {SEVERITY_ORDER.map((s, i) => (
                   <Bar key={s} dataKey={AGE_DISP_KEY[s]} name={s} stackId="a" fill={sevColor(s)} activeBar={false}
-                       onClick={(d) => toggleFilter("Age_band_of_driver", d.key)} cursor="pointer" />
+                       onClick={(d) => toggleFilter("Age_band_of_driver", d.key)} cursor="pointer">
+                    {i === SEVERITY_ORDER.length - 1 && (
+                      <LabelList dataKey="pct" position="top" fontSize={11} fill="#8B98A8" formatter={(v) => `${fmtPct(v)}%`} />
+                    )}
+                  </Bar>
                 ))}
               </BarChart>
             </ResponsiveContainer>
@@ -173,52 +178,9 @@ export default function Insights() {
                        tickFormatter={(v) => fmtPct(v)} />
                 <Tooltip {...tipProps} formatter={(v, n) => [`${fmtPct(v)}%`, n]} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="Slight" stroke={sevColor("Slight Injury")} strokeWidth={2} dot={{ r: 3 }} />
                 <Line type="monotone" dataKey="Serious" stroke={sevColor("Serious Injury")} strokeWidth={2} dot={{ r: 3 }} />
                 <Line type="monotone" dataKey="Fatal" stroke={sevColor("Fatal injury")} strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <SeverityFactorBars field="Weather_conditions" title="Weather"  top={7} minCount={10}
-                            totalBasis="all" scale="sqrt" />
-
-        <div className="card">
-          <div className="card-head"><span className="card-title">Light conditions</span></div>
-          <div className="fill">
-            <ResponsiveContainer width="100%" height="100%">
-              <FunnelChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-                <Tooltip cursor={false} content={<InjuryTooltip sevColor={sevColor} />} />
-                <Funnel dataKey="_disp" data={light} nameKey="key" isAnimationActive={false}
-                        lastShapeType="triangle" stroke="#0A0E14" strokeWidth={2}
-                        onClick={(d) => toggleFilter("Light_conditions", d.key ?? d.payload?.key)} cursor="pointer">
-                  {light.map((d) => <Cell key={d.key} fill={d.color} />)}
-                  <LabelList position="center" dataKey="pct" fill="#fff" stroke="none"
-                             fontSize={11} fontWeight={600} formatter={(v) => `${fmtPct(v)}%`}
-                             style={{ pointerEvents: "none" }} />
-                </Funnel>
-                <Legend iconSize={8} wrapperStyle={{ fontSize: 10 }}
-                        payload={light.map((d) => ({ value: d.key, type: "square", color: d.color, id: d.key }))} />
-              </FunnelChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="card-head"><span className="card-title">Road surface</span>
-          </div>
-          <div className="fill">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={surface} dataKey="_disp" nameKey="key" outerRadius="82%" innerRadius={0} paddingAngle={2}
-                     stroke="#0A0E14" strokeWidth={2} labelLine={false} label={renderSlicePct}
-                     onClick={(d) => toggleFilter("Road_surface_conditions", d.key)} cursor="pointer">
-                  {surface.map((d) => <Cell key={d.key} fill={d.color} />)}
-                </Pie>
-                <Legend iconSize={8} wrapperStyle={{ fontSize: 10 }} />
-                <Tooltip cursor={false} content={<InjuryTooltip sevColor={sevColor} />} />
-              </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
@@ -241,6 +203,48 @@ export default function Insights() {
                   </Bar>
                 ))}
               </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <SeverityFactorBars field="Weather_conditions" title="Weather"  top={7} minCount={10}
+                            totalBasis="all" scale="sqrt" />
+
+        <div className="card">
+          <div className="card-head"><span className="card-title">Road surface</span>
+          </div>
+          <div className="fill">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={surface} dataKey="_disp" nameKey="key" outerRadius="82%" innerRadius={0} paddingAngle={2}
+                     stroke="#0A0E14" strokeWidth={2} labelLine={false} label={renderSlicePct}
+                     onClick={(d) => toggleFilter("Road_surface_conditions", d.key)} cursor="pointer">
+                  {surface.map((d) => <Cell key={d.key} fill={d.color} />)}
+                </Pie>
+                <Legend iconSize={8} wrapperStyle={{ fontSize: 10 }} />
+                <Tooltip cursor={false} content={<InjuryTooltip sevColor={sevColor} />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-head"><span className="card-title">Light conditions</span></div>
+          <div className="fill">
+            <ResponsiveContainer width="100%" height="100%">
+              <FunnelChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+                <Tooltip cursor={false} content={<InjuryTooltip sevColor={sevColor} />} />
+                <Funnel dataKey="_disp" data={light} nameKey="key" isAnimationActive={false}
+                        lastShapeType="triangle" stroke="#0A0E14" strokeWidth={2}
+                        onClick={(d) => toggleFilter("Light_conditions", d.key ?? d.payload?.key)} cursor="pointer">
+                  {light.map((d) => <Cell key={d.key} fill={d.color} />)}
+                  <LabelList position="center" dataKey="pct" fill="#fff" stroke="none"
+                             fontSize={11} fontWeight={600} formatter={(v) => `${fmtPct(v)}%`}
+                             style={{ pointerEvents: "none" }} />
+                </Funnel>
+                <Legend iconSize={8} wrapperStyle={{ fontSize: 10 }}
+                        payload={light.map((d) => ({ value: d.key, type: "square", color: d.color, id: d.key }))} />
+              </FunnelChart>
             </ResponsiveContainer>
           </div>
         </div>

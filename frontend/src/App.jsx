@@ -91,9 +91,9 @@ export default function App() {
     <div className="app capitalize">
       <aside className="sidebar group fixed inset-y-0 left-0 z-50 w-14 overflow-hidden transition-[width] duration-200 ease-in-out hover:w-57.5 hover:shadow-[8px_0_24px_rgba(0,0,0,0.45)]">
         <div className="brand">
-          <div className="brand-mar rounded-sm text-[9px] bg-amber-500 p-1">RSA</div>
+          <div className="brand-mar rounded-sm text-[9px] bg-amber-500 p-1">RAA</div>
           <div className="min-w-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-            <div className="brand-name whitespace-nowrap">Road Safety<br/>Analysis</div>
+            <div className="brand-name whitespace-nowrap">Road Accident<br/>Analysis</div>
           </div>
         </div>
 

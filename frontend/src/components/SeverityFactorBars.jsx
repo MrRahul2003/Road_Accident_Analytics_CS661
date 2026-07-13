@@ -3,7 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } fro
 import { useStore } from "../data/store.jsx";
 import { useAgg } from "../data/api.js";
 import { SEVERITY_ORDER } from "../theme.js";
-import { foldAgg, memberMap, fmtPct } from "../data/aggutil.js";
+import { foldAgg, memberMap, fmtPct, sortUnknownOtherLast } from "../data/aggutil.js";
 import { tipProps } from "./Overview.jsx";
 
 export default function SeverityFactorBars({ field, title, sub, top = 8, sortByRisk = true, legend = false, minCount = 5, remap, className = "", totalBasis = "category", scale = "linear" }) {
@@ -17,6 +17,7 @@ export default function SeverityFactorBars({ field, title, sub, top = 8, sortByR
     const rows = remap ? foldAgg(agg, remap) : agg;
     const grandTotal = rows.reduce((sum, o) => sum + o.total, 0);
     let g = [...rows].sort((a, b) => (sortByRisk ? b.risk - a.risk : b.total - a.total)).slice(0, top);
+    g = sortUnknownOtherLast(g, () => 0);
     return g.map((o) => {
       const denom = totalBasis === "all" ? grandTotal : o.total;
       return {

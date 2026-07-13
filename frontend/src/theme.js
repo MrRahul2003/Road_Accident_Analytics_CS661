@@ -43,7 +43,7 @@ export const PALETTES = {
   },
   colorblind: {
     label: "Colour-blind safe",
-    description: "Okabe–Ito palette, distinguishable under deuteranopia, protanopia and tritanopia.",
+    // description: "Okabe–Ito palette, distinguishable under deuteranopia, protanopia and tritanopia.",
     cvdSafe: true,
     sequential: interpolateViridis,
     sequentialLabel: "Viridis",

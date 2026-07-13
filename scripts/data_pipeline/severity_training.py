@@ -98,20 +98,36 @@ DATASETS = {
         "records": ROOT / "data" / "runtime" / "india" / "records",
         "model_dir": ROOT / "data" / "runtime" / "india" / "model",
         "model_json": ROOT / "frontend" / "public" / "app-data" / "model.json",
+        # State is assigned by assign_states_exact() purely from MoRTH marginal
+        # totals via a seeded shuffle, independent of every Road.csv field
+        # (see build_runtime_dataset.py) — trained in at explicit request, but
+        # any State-level split the model learns reflects that one random
+        # assignment's sampling noise, not a real geographic relationship.
+        "state_is_feature": True,
         "state_note": (
-            "State is an independent MoRTH marginal enrichment with no "
-            "relationship to the Road.csv predictors, so it is excluded from "
-            "the model; it is shown in the form for scenario framing only."
+            "State is trained as a feature, but it is an independent MoRTH "
+            "marginal enrichment assigned by a seeded shuffle with no real "
+            "relationship to the Road.csv predictors — any State-level "
+            "effect the model shows reflects sampling noise from that "
+            "assignment, not an observed geographic risk difference."
         ),
     },
     "uk": {
         "records": ROOT / "data" / "runtime" / "uk" / "records",
         "model_dir": ROOT / "data" / "runtime" / "uk" / "model",
         "model_json": ROOT / "frontend" / "public" / "app-data" / "model_uk.json",
+        # Unlike India's State, UK police force is an observed STATS19 field
+        # (build_runtime_dataset.py reads it straight off the collision
+        # table) and it carries real signal: fatal-injury rate ranges from
+        # ~0.5% (City of London) to ~4.1% (Northern) against a ~1.6% overall
+        # base rate, reflecting each force's real mix of road types and
+        # rurality. It is trained as a genuine feature.
+        "state_is_feature": True,
         "state_note": (
-            "Police force is a reporting jurisdiction, not a crash "
-            "circumstance, so it is excluded from the model; it is shown in "
-            "the form for scenario framing only."
+            "Police force is trained as a real feature: it is an observed "
+            "STATS19 field whose fatal-injury rate varies several-fold "
+            "across forces, reflecting each force's mix of road types and "
+            "rurality."
         ),
     },
 }
@@ -179,7 +195,7 @@ def load_combinations(records_dir, cat_features, num_features):
     combos["label"] = combos["label"].astype(str)
     return combos
 
-def train_model(dataset, combos, cat_features, num_features, state_levels):
+def train_model(dataset, combos, cat_features, num_features, state_levels, form_only_cat):
     from sklearn.metrics import (
         accuracy_score,
         classification_report,
@@ -321,7 +337,7 @@ def train_model(dataset, combos, cat_features, num_features, state_levels):
         "severity_order": SEVERITY_ORDER,
         "model_cat_features": cat_features,
         "model_num_features": num_features,
-        "form_only_cat": FORM_ONLY_CAT,
+        "form_only_cat": form_only_cat,
         "cat_levels": cat_levels,
         "num_features": num_features,
         "num_means": {c: num_stats[c]["mean"] for c in num_features},
@@ -413,6 +429,10 @@ def run(dataset):
         ).fetchall()
     }
     cat_features = [c for c in FEATURE_CAT if c in available]
+    state_is_feature = cfg.get("state_is_feature", False) and "State" in available
+    if state_is_feature:
+        cat_features = cat_features + ["State"]
+    form_only_cat = [] if state_is_feature else [c for c in FORM_ONLY_CAT if c in available]
     num_features = [c for c in FEATURE_NUM if c in available]
 
     combos = load_combinations(records_dir, cat_features, num_features)
@@ -431,7 +451,7 @@ def run(dataset):
 
     print(f"Training XGBoost severity predictor ({dataset})...")
     ui_meta, serving = train_model(
-        dataset, combos, cat_features, num_features, state_levels
+        dataset, combos, cat_features, num_features, state_levels, form_only_cat
     )
 
     cfg["model_dir"].mkdir(parents=True, exist_ok=True)

@@ -1,5 +1,14 @@
 const SEV_KEYS = ["Slight Injury", "Serious Injury", "Fatal injury"];
 
+// Exact percentage: adaptive precision so small-but-nonzero shares never render as "0%".
+export const fmtPct = (v) => {
+  if (!isFinite(v) || v <= 0) return "0";
+  if (v >= 1) return String(+v.toFixed(1));
+  if (v >= 0.1) return String(+v.toFixed(2));
+  const s = +v.toFixed(3);
+  return s ? String(s) : "<0.001";
+};
+
 export function foldAgg(rows, mapKey) {
   const acc = {};
   for (const r of rows) {

@@ -3,7 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } fro
 import { useStore } from "../data/store.jsx";
 import { useAgg } from "../data/api.js";
 import { SEVERITY_ORDER } from "../theme.js";
-import { foldAgg, memberMap } from "../data/aggutil.js";
+import { foldAgg, memberMap, fmtPct } from "../data/aggutil.js";
 import { tipProps } from "./Overview.jsx";
 
 export default function SeverityFactorBars({ field, title, sub, top = 8, sortByRisk = true, legend = false, minCount = 5, remap, className = "", totalBasis = "category", scale = "linear" }) {
@@ -45,13 +45,13 @@ export default function SeverityFactorBars({ field, title, sub, top = 8, sortByR
                    tickFormatter={(v) => `${v.toFixed(0)}%`}
                    stroke="#2C3A4A" tick={{ fontSize: 9.5, fill: "#B8C2CD" }} tickLine={false} />
             <YAxis type="category" dataKey="key" width={118} stroke="#2C3A4A" tick={{ fontSize: 10, fill: "#B8C2CD" }} tickLine={false} />
-            <Tooltip {...tipProps} formatter={(v, n) => [`${v.toFixed(1)}%`, n]} />
+            <Tooltip {...tipProps} formatter={(v, n) => [`${fmtPct(v)}%`, n]} />
             {legend && <Legend wrapperStyle={{ fontSize: 11 }} />}
             {SEVERITY_ORDER.map((s) => (
               <Bar key={s} dataKey={keyMap[s]} name={s} stackId="a" fill={sevColor(s)} activeBar={false}
                    onClick={(d) => onBar(d.key)} cursor="pointer"
                    label={s === "Fatal injury" ? { position: "right", fontSize: 9.5, fill: sevColor("Fatal injury"),
-                            formatter: (v) => (v > 0 ? `${v.toFixed(0)}%` : "") } : false} />
+                            formatter: (v) => (v > 0 ? `${fmtPct(v)}%` : "") } : false} />
             ))}
           </BarChart>
         </ResponsiveContainer>

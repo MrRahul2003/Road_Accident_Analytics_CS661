@@ -7,8 +7,7 @@ An interactive visual analytics system for exploring road-accident volume, sever
 [![DuckDB](https://img.shields.io/badge/DuckDB-Parquet-FFF000?logo=duckdb&logoColor=black)](https://duckdb.org/)
 [![XGBoost](https://img.shields.io/badge/XGBoost-Multiclass-EC6B23)](https://xgboost.ai/)
 
-> **Live demo placeholder:** [Open Road Accident Analytics](https://road-accident-analytics.example.com)  
-> Replace this URL with the deployed frontend URL after hosting.
+> **Live Demo:** [Open Road Accident Analytics](https://road-accident-analytics-cs-661-bsl8h9l3v.vercel.app/)
 
 ## Project highlights
 
@@ -21,21 +20,17 @@ An interactive visual analytics system for exploring road-accident volume, sever
 
 ## Screenshots
 
-> Replace these repository placeholders with screenshots from the running application while keeping the same filenames or updating the links.
-
 | Overview | Temporal analysis |
 |---|---|
-| ![Overview](docs/screenshots/overview.svg) | ![Temporal analysis](docs/screenshots/temporal.svg) |
+| ![Overview dashboard](docs/screenshots/overview.png) | ![Temporal analysis dashboard](docs/screenshots/temporal.png) |
 
-### Severity predictor
+| EDA and insights | Severity predictor |
+|---|---|
+| ![EDA and insights dashboard](docs/screenshots/eda-insights.png) | ![Severity predictor dashboard](docs/screenshots/predictor.png) |
 
-![Severity predictor](docs/screenshots/predictor.svg)
-
-Recommended screenshots:
-
-1. **Overview:** KPIs, severity distribution, area chart, and India map.
-2. **Temporal:** day × hour heatmap and hourly Serious/Fatal rate chart.
-3. **Predictor:** scenario inputs, probability bars, evaluation table, and feature contributions.
+The screenshots above are taken from the final project report and show the
+linked dashboard views, filters, EDA comparisons, and live severity prediction
+interface.
 
 ## Analytical views
 

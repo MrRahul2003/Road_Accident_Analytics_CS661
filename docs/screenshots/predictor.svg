@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
-  <rect width="1280" height="720" fill="#0b1118"/>
-  <rect x="28" y="28" width="1224" height="664" rx="18" fill="#111a24" stroke="#2b3d50" stroke-width="2"/>
-  <text x="640" y="270" text-anchor="middle" fill="#e6edf3" font-family="Arial, sans-serif" font-size="40" font-weight="700">Predictor Screenshot</text>
-  <text x="640" y="330" text-anchor="middle" fill="#93a4b8" font-family="Arial, sans-serif" font-size="24">Replace with scenario inputs, probabilities, and contributions</text>
-  <rect x="390" y="390" width="500" height="64" rx="10" fill="#1c2a38" stroke="#3d566e"/>
-  <text x="640" y="431" text-anchor="middle" fill="#b653a5" font-family="Arial, sans-serif" font-size="21">docs/screenshots/predictor.svg</text>
-</svg>

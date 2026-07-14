@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "./store.jsx";
 
-export const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+// Vercel supplies VITE_API_BASE at build time. Removing a trailing slash keeps
+// requests in the form https://backend.example.com/api/... instead of //api/....
+export const API_BASE = (
+  import.meta.env.VITE_API_BASE || "http://localhost:8000"
+).replace(/\/$/, "");
 
 function qs(params) {
   const p = new URLSearchParams();

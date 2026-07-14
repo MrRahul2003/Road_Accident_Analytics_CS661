@@ -2,6 +2,7 @@
 
 import json
 import math
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -31,8 +32,20 @@ DATASETS = {
 SEVERITY_ORDER = ["Slight Injury", "Serious Injury", "Fatal injury"]
 
 app = FastAPI(title="Road Accident Analysis API")
-app.add_middleware(CORSMiddleware, allow_origins=["*"],
-                   allow_methods=["*"], allow_headers=["*"])
+
+# Local development works without configuration. In production, set
+# FRONTEND_ORIGINS to the comma-separated Vercel URLs that may call this API.
+frontend_origins = [
+    origin.strip().rstrip("/")
+    for origin in os.getenv("FRONTEND_ORIGINS", "*").split(",")
+    if origin.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=frontend_origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 con = duckdb.connect()
 con.execute("PRAGMA threads=4")

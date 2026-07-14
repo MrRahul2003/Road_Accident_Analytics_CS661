@@ -134,28 +134,47 @@ npm run preview
 
 The generated frontend is written to `frontend/dist/`.
 
-## Deployment outline
+## Deployment: Render backend + Vercel frontend
 
-### Backend deployment
+The complete project remains in one GitHub repository. Render runs the
+FastAPI/DuckDB service, while Vercel builds the React frontend from
+`frontend/`.
 
-Deploy the repository to Render, Railway, or another Python host.
+### 1. Deploy the backend on Render
 
-```bash
-pip install -r backend/requirements.txt
-uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+1. Push this repository to GitHub.
+2. In Render, select **New + → Blueprint** and connect the repository.
+3. Render detects `render.yaml`; approve the `road-accident-analytics-api` service.
+4. Wait for deployment, then open:
+   `https://YOUR-RENDER-SERVICE.onrender.com/api/health`.
+5. Copy the service URL without `/api/health`.
+
+The repository already includes the required runtime Parquet and model files.
+
+### 2. Deploy the frontend on Vercel
+
+1. Import the same GitHub repository into Vercel.
+2. Choose **Vite** as the framework preset.
+3. Set **Root Directory** to `frontend`.
+4. Keep **Build Command** as `npm run build` and **Output Directory** as `dist`.
+5. Add this environment variable for Production, Preview, and Development:
+
+   ```text
+   VITE_API_BASE=https://YOUR-RENDER-SERVICE.onrender.com
+   ```
+
+6. Click **Deploy**.
+
+### 3. Restrict backend access after Vercel deploys
+
+In Render, add the environment variable below and redeploy the service:
+
+```text
+FRONTEND_ORIGINS=https://YOUR-PROJECT.vercel.app
 ```
 
-The deployment must include `data/runtime/india/` and `data/runtime/uk/`.
-
-### Frontend deployment
-
-Deploy `frontend/` through Vercel, Netlify, or another static host. Set the deployed API address before building:
-
-```bash
-VITE_API_BASE=https://your-backend.example.com npm run build
-```
-
-Replace the live-demo placeholder at the top of this README with the deployed frontend address.
+For multiple allowed Vercel domains, use a comma-separated value. Replace the
+live-demo placeholder at the top of this README with the final Vercel URL.
 
 ## Main API endpoints
 
@@ -247,4 +266,3 @@ Road_Accident_Analytics_CS661/
 ## Mentor
 
 **Prof. Soumya Datta — CS661**
-
